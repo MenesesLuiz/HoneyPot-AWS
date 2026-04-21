@@ -1,43 +1,18 @@
-Projeto Guardião: HoneyPot em Ambiente AWS
+0. HoneyPot utilizando AWS
 
-0. Visão Geral
+O objetivo do projeto é criar um ambiente onde bots possam tentar se conectar à minha instância por meio de senhas (e falharão). Nessa atividade irei enriquecer meus conhecimentos em Linux, Python, SQL, Cibersegurança e (obviamente) Cloud.
 
-O objetivo deste projeto é criar um ambiente controlado (HoneyPot) para atrair e monitorar tentativas de conexão maliciosas vindas de bots e agentes externos. O sistema é configurado para aceitar tentativas de autenticação que invariavelmente falharão, permitindo a coleta de dados para estudo.
+1. Criando a instância
 
-Esta atividade foca no desenvolvimento e integração de competências em:
+Nesse projeto estarei utilizando um Ubuntu Server numa instância EC2 na AWS de tipo t2.micro.
 
-Linux: Administração de servidores Ubuntu e permissões de sistema.
+1.1. Realizando a conexão via SSH
 
-Python: Automação e manipulação de sockets.
+Após salvar minha chave de acesso SSH .pem eu tive que alterar as configurações de permissões, permitindo apenas o meu usuário ler a chave para poder conectar no servidor sem dar o erro de "UNPROTECTED PRIVATE KEY FILE".
 
-SQL: Modelagem de dados e persistência de logs.
+1.2. Instalação do MySQL e criação das tabelas
 
-Cibersegurança: Conceitos de monitoramento e análise de ameaças.
-
-Cloud Computing: Provisionamento e configuração de infraestrutura na AWS.
-
-1. Configuração da Infraestrutura
-
-1.1 Instância EC2
-
-O projeto utiliza uma instância t2.micro na AWS com o sistema operacional Ubuntu Server.
-
-1.2 Acesso e Segurança (SSH)
-
-Para estabelecer a conexão via SSH, foi necessário ajustar as permissões da chave privada .pem. O sistema exige que apenas o proprietário tenha acesso de leitura para evitar o erro de vulnerabilidade do arquivo.
-
-Comando de ajuste de permissão:
-
-chmod 400 sua-chave.pem
-
-
-2. Camada de Dados (MySQL)
-
-O banco de dados armazena os registros de todas as tentativas de intrusão. O status do serviço foi validado através do comando sudo systemctl status mysql.
-
-2.1 Modelagem da Tabela
-
-Dentro da base de dados denominada honeypot, foi criada a tabela registro_ataque com a seguinte estrutura:
+Ele vai servir principalmente para armazenar os logs do nosso HoneyPot. após a instalação, chequei pra ver se o processo estava rodando tudo certinho com o comando: sudo systemctl status mysql. Após concluir a instalação e verificar que o MySQL está OK, entrei no banco de dados e criei a tabela honeypot, dentro dela rodei o script:
 
 CREATE TABLE registro_ataque (
     id INT AUTO_INCREMENT PRIMARY KEY,
@@ -47,60 +22,29 @@ CREATE TABLE registro_ataque (
 );
 
 
-3. Ambiente de Desenvolvimento Python
+1.3. Instalação do Python e suas bibliotecas
 
-3.1 Isolamento de Ambiente (Virtualenv)
+Como utilizaremos bibliotecas do Python, o sistema não permite que instalemos qualquer coisa, precisei instalar o env do python para isolar ele do meu ambiente.
+Após entrar na env, instalei a biblioteca mysql-connector-python.
 
-Para garantir a integridade do sistema operacional e evitar conflitos entre dependências, foi utilizado um ambiente virtual (env).
+1.4. Script guardiao.py
 
-3.2 Dependências
+Entrando na .env, criamos o arquivo guardiao.py que irá armazenar o meu script em python, o script utiliza a biblioteca socket e mysql.connector.
 
-A biblioteca necessária para a comunicação entre o script e o banco de dados foi instalada dentro do ambiente isolado:
+1.5. Configuração na AWS
 
-mysql-connector-python
+Antes de tudo, precisamos alterar o security group na AWS para abrir a porta 2222 para qualquer conexão TCP. Para isso alteramos as regras de entrada:
 
-4. O Script Guardião (guardiao.py)
+Versão do IP: IPv4
 
-O arquivo principal, guardiao.py, foi desenvolvido utilizando as seguintes bibliotecas nativas e externas:
+Tipo: TCP Personalizado
 
-Socket: Para escutar e gerenciar conexões TCP na rede.
+Protocolo: TCP
 
-mysql.connector: Para realizar a inserção dos dados capturados na tabela do MySQL.
+Intervalo de portas: 2222
 
-5. Configuração de Rede na AWS (Security Group)
+Origem: 0.0.0.0/0
 
-Para que o HoneyPot seja acessível externamente, as Regras de Entrada do Security Group foram alteradas para abrir a porta 2222.
+2.0 Tudo pronto
 
-Parâmetro
-
-Configuração
-
-Versão IP
-
-IPv4
-
-Tipo
-
-TCP Personalizado
-
-Protocolo
-
-TCP
-
-Intervalo de Portas
-
-2222
-
-Origem
-
-0.0.0.0/0
-
-6. Execução e Monitoramento
-
-Com a infraestrutura provisionada e os serviços configurados, o projeto entra em operação ao executar o script dentro do ambiente virtual:
-
-source .env/bin/activate
-python3 guardiao.py
-
-
-O sistema agora monitora e registra qualquer tentativa de conexão TCP que chegue à porta 2222, alimentando a tabela de logs em tempo real.
+Após as configurações do nosso humilde projeto estarem feitas com o banco de dados ok, script ok e tudo configurado como deve ser. Rodamos o guardiao.py (o arquivo do nosso script) no nosso .env para pegarmos qualquer conexão TCP que tenta chegar na porta 2222
