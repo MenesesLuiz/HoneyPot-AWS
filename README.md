@@ -31,7 +31,7 @@ sudo systemctl status mysql
 Após concluir a instalação e verificar que o MySQL está OK, entrei no banco de dados e criei a tabela "honeypot", dentro dela rodei o script:
 
 ```sql
-CREATE TABLE registro_ataque (
+CREATE TABLE registro_ataques (
 
 id INT AUTO_INCREMENT PRIMARY KEY,
 
