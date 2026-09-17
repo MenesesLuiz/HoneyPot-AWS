@@ -1,0 +1,11 @@
+CREATE TABLE registro_ataque (
+
+id INT AUTO_INCREMENT PRIMARY KEY,
+
+ip VARCHAR(50),
+
+usuario VARCHAR(50),
+
+data_hora DATETIME DEFAULT CURRENT_TIMESTAMP
+
+);
