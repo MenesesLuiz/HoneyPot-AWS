@@ -16,7 +16,7 @@ Um sensor TCP simples para registrar conexões recebidas em uma porta exposta de
 Clone o repositório, crie o ambiente virtual e instale a dependência:
 
 ```bash
-git clone https://github.com/SEU_USUARIO/HoneyPot-AWS.git
+git clone https://github.com/MenesesLuiz/HoneyPot-AWS.git
 cd HoneyPot-AWS
 python3 -m venv .venv
 source .venv/bin/activate
@@ -85,4 +85,3 @@ Use `journalctl -u guardiao -f` para acompanhar os logs.
 - Mantenha `.env` privado; ele contém a senha do banco.
 - Use um usuário MySQL exclusivo e com permissão mínima de `INSERT`.
 - A porta pública receberá tráfego não confiável. Rode este serviço em uma instância isolada, sem dados pessoais ou outros serviços expostos.
-- Registros de IP podem estar sujeitos a requisitos de privacidade e retenção. Defina uma política de descarte adequada ao seu contexto.
