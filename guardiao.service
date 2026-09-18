@@ -1,0 +1,18 @@
+[Unit]
+Description=Guardiao TCP honeypot
+After=network-online.target mysql.service
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=honeypot
+WorkingDirectory=/opt/honeypot-aws
+EnvironmentFile=/opt/honeypot-aws/.env
+ExecStart=/opt/honeypot-aws/.venv/bin/python /opt/honeypot-aws/guardiao.py
+Restart=on-failure
+RestartSec=5
+NoNewPrivileges=true
+PrivateTmp=true
+
+[Install]
+WantedBy=multi-user.target

@@ -1,79 +1,88 @@
-# 0. HoneyPot utilizando AWS
+# Honeypot TCP na AWS
 
-O objetivo do projeto é criar um ambiente onde bots possam tentar se conectar à minha instância por meio de senhas (e falharão). Nessa atividade irei enriquecer meus conhecimentos em Linux, Python, SQL, Cibersegurança e (obviamente) Cloud.
+Um sensor TCP simples para registrar conexões recebidas em uma porta exposta de uma instância EC2. A cada conexão, o serviço grava o IP, data/hora e o tipo de evento no MySQL, envia um banner e encerra a sessão.
 
----
+> Este projeto **não implementa SSH** e não captura credenciais. Um cliente SSH na porta 2222 falhará na negociação porque o serviço é TCP simples. Não exponha o SSH administrativo da instância à internet; mantenha-o em outra porta ou restrinja-o ao seu IP no Security Group.
 
-## 1. Criando a instância
+## Pré-requisitos
 
-Nesse projeto estarei utilizando um Ubuntu Server numa instância EC2 na AWS de tipo t2.micro.
+- Ubuntu Server em uma instância EC2
+- Python 3.10 ou superior
+- MySQL Server
+- Regra de entrada TCP para a porta escolhida (por padrão, `2222`)
 
----
+## Instalação
 
-### 1.1. Realizando a conexão via SSH
-
-Após salvar minha chave de acesso SSH `.pem` eu tive que alterar as configurações de permissões, permitindo apenas o meu usuário ler a chave para poder conectar no servidor sem dar o erro de:
-
-```
-UNPROTECTED PRIVATE KEY FILE
-```
-
----
-
-### 1.2. Instalação do MySQL e criação das tabelas
-
-Ele vai servir principalmente para armazenar os logs do nosso HoneyPot. após a instalação, chequei pra ver se o processo estava rodando tudo certinho com o comando:
+Clone o repositório, crie o ambiente virtual e instale a dependência:
 
 ```bash
-sudo systemctl status mysql
+git clone https://github.com/SEU_USUARIO/HoneyPot-AWS.git
+cd HoneyPot-AWS
+python3 -m venv .venv
+source .venv/bin/activate
+pip install -r requirements.txt
 ```
 
-Após concluir a instalação e verificar que o MySQL está OK, entrei no banco de dados e criei a tabela "honeypot", dentro dela rodei o script:
+Crie o banco e a tabela:
+
+```bash
+sudo mysql < bd.sql
+```
+
+Crie um usuário MySQL com acesso apenas ao banco do projeto. Escolha uma senha forte no lugar de `SUA_SENHA`:
 
 ```sql
-CREATE TABLE registro_ataques (
-
-id INT AUTO_INCREMENT PRIMARY KEY,
-
-ip VARCHAR(50),
-
-usuario VARCHAR(50),
-
-data_hora DATETIME DEFAULT CURRENT_TIMESTAMP
-
-);
+CREATE USER 'honeypot_app'@'localhost' IDENTIFIED BY 'SUA_SENHA';
+GRANT INSERT ON honeypot.registro_ataques TO 'honeypot_app'@'localhost';
+FLUSH PRIVILEGES;
 ```
 
----
+Configure as variáveis de ambiente sem versionar segredos:
 
-### 1.3. Instalação do Python e suas bibliotecas
-
-Como utilizaremos bibliotecas do Python, o sistema não permite que instalemos qualquer coisa, precisei instalar o env do python para isolar ele do meu ambiente.
-
-Após entrar na env, instalei a biblioteca "mysql-connector-python".
-
----
-
-### 1.4. Script guardiao.py
-
-Entrando na `.env`, criamos o arquivo `guardiao.py` que irá armazenar o meu script em python, o script utiliza a biblioteca socket e mysql.connector.
-
----
-
-### 1.5. Configuração na AWS
-
-Antes de tudo, precisamos alterar o security group na AWS para abrir a porta 2222 para qualquer conexão TCP. Para isso alteramos as regras de entrada:
-
-```
-Versão do IP: IPv4
-Tipo: TCP Personalizado
-Protocolo: TCP
-Intervalo de portas: 2222
-Origem: 0.0.0.0/0
+```bash
+cp .env.example .env
+nano .env
+set -a
+source .env
+set +a
 ```
 
----
+Inicie manualmente para testar:
 
-## 2.0 Tudo pronto
+```bash
+python guardiao.py
+```
 
-Após as configurações do nosso humilde projeto estarem feitas com o banco de dados ok, script ok e tudo configurado como deve ser. Rodamos o guardiao.py (o arquivo do nosso script) no nosso .env para pegarmos qualquer conexão TCP que tenta chegar na porta 2222
+Em outro terminal, teste uma conexão:
+
+```bash
+nc -v IP_DA_INSTANCIA 2222
+```
+
+Consulte os eventos:
+
+```sql
+SELECT id, ip, usuario, data_hora
+FROM registro_ataques
+ORDER BY data_hora DESC;
+```
+
+## Execução como serviço
+
+O arquivo `guardiao.service` mantém o processo ativo após logout ou reinicialização. Ajuste os caminhos e o usuário `honeypot` se necessário, depois execute:
+
+```bash
+sudo cp guardiao.service /etc/systemd/system/
+sudo systemctl daemon-reload
+sudo systemctl enable --now guardiao
+sudo systemctl status guardiao
+```
+
+Use `journalctl -u guardiao -f` para acompanhar os logs.
+
+## Segurança e limites
+
+- Mantenha `.env` privado; ele contém a senha do banco.
+- Use um usuário MySQL exclusivo e com permissão mínima de `INSERT`.
+- A porta pública receberá tráfego não confiável. Rode este serviço em uma instância isolada, sem dados pessoais ou outros serviços expostos.
+- Registros de IP podem estar sujeitos a requisitos de privacidade e retenção. Defina uma política de descarte adequada ao seu contexto.
