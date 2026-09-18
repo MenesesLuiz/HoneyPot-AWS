@@ -16,7 +16,7 @@ Um sensor TCP simples para registrar conexões recebidas em uma porta exposta de
 Clone o repositório, crie o ambiente virtual e instale a dependência:
 
 ```bash
-git clone https://github.com/MenesesLuiz/HoneyPot-AWS.git
+git clone https://github.com/MenesesLuiz/HoneyPotTCP-AWS.git
 cd HoneyPot-AWS
 python3 -m venv .venv
 source .venv/bin/activate
